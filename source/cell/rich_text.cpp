@@ -54,6 +54,7 @@ rich_text &rich_text::operator=(const rich_text &rhs)
 {
     runs_.clear();
     runs_ = rhs.runs_;
+    phonetic_props_ = rhs.phonetic_props_;
     return *this;
 }
 
@@ -107,7 +108,10 @@ bool rich_text::operator==(const rich_text &rhs) const
     {
         if (runs_[i] != rhs.runs_[i]) return false;
     }
-
+    if (this->phonetic_props_ != rhs.phonetic_props_)
+    {
+        return false;
+    }
     return true;
 }
 
@@ -124,6 +128,21 @@ bool rich_text::operator!=(const rich_text &rhs) const
 bool rich_text::operator!=(const std::string &rhs) const
 {
     return !(*this == rhs);
+}
+
+bool rich_text::has_phonetic_property() const
+{
+    return phonetic_props_.is_set();
+}
+
+void rich_text::phonetic_property(const xlnt::phonetic_pr &phonetic_props)
+{
+    phonetic_props_.set(phonetic_props);
+}
+
+const xlnt::phonetic_pr &rich_text::phonetic_property() const
+{
+    return phonetic_props_.get();
 }
 
 } // namespace xlnt

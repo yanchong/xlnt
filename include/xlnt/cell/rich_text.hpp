@@ -28,6 +28,7 @@
 
 #include <xlnt/xlnt_config.hpp>
 #include <xlnt/cell/rich_text_run.hpp>
+#include <xlnt/worksheet/phonetic_pr.hpp>
 
 namespace xlnt {
 
@@ -119,11 +120,32 @@ public:
     /// </summary>
     bool operator!=(const std::string &rhs) const;
 
+    /// <summary>
+    /// is the phonetic hint properties set?
+    /// </summary>
+    bool has_phonetic_property() const;
+    
+    /// <summary>
+    /// set the phonetic hint properties
+    /// </summary>
+    void phonetic_property(const phonetic_pr& phonetic_props);
+
+    /// <summary>
+    /// get the set phonetic hint properties
+    /// exception thrown if not set
+    /// </summary>
+    const phonetic_pr &phonetic_property() const;
+
 private:
     /// <summary>
     /// The runs that make up this rich text.
     /// </summary>
     std::vector<rich_text_run> runs_;
+
+    /// <summary>
+    /// phonetic hint properties
+    /// </summary>
+    xlnt::optional<phonetic_pr> phonetic_props_;
 };
 
 class XLNT_API rich_text_hash

@@ -2993,6 +2993,16 @@ rich_text xlsx_consumer::read_rich_text(const xml::qname &parent)
         }
         else if (text_element == xml::qname(xmlns, "phoneticPr"))
         {
+            phonetic_pr phonetic_properties(parser().attribute<std::uint32_t>("fontId"));
+            if (parser().attribute_present("type"))
+            {
+                phonetic_properties.type(phonetic_pr::type_from_string(parser().attribute("type")));
+            }
+            if (parser().attribute_present("alignment"))
+            {
+                phonetic_properties.alignment(phonetic_pr::alignment_from_string(parser().attribute("alignment")));
+            }
+            t.phonetic_property(phonetic_properties);
             skip_remaining_content(text_element);
         }
         else
