@@ -45,19 +45,6 @@ rich_text::rich_text(const std::string &plain_text, const class font &text_font)
 {
 }
 
-rich_text::rich_text(const rich_text &other)
-{
-    *this = other;
-}
-
-rich_text &rich_text::operator=(const rich_text &rhs)
-{
-    runs_.clear();
-    runs_ = rhs.runs_;
-    phonetic_props_ = rhs.phonetic_props_;
-    return *this;
-}
-
 rich_text::rich_text(const rich_text_run &single_run)
 {
     add_run(single_run);

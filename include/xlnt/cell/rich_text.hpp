@@ -50,11 +50,6 @@ public:
     rich_text(const std::string &plain_text);
 
     /// <summary>
-    /// Constructs a rich text object from other
-    /// </summary>
-    rich_text(const rich_text &other);
-
-    /// <summary>
     /// Constructs a rich text object with the given text and font.
     /// </summary>
     rich_text(const std::string &plain_text, const class font &text_font);
@@ -94,11 +89,6 @@ public:
     /// Adds a new run to the end of the set of runs.
     /// </summary>
     void add_run(const rich_text_run &t);
-
-    /// <summary>
-    /// Copies rich text object from other
-    /// </summary>
-    rich_text& operator=(const rich_text &rhs);
 
     /// <summary>
     /// Returns true if the runs that make up this text are identical to those in rhs.
