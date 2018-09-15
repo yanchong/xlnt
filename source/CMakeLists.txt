@@ -17,42 +17,9 @@ set(XLNT_INCLUDE_DIR ${XLNT_ROOT_DIR}/include)
 set(XLNT_SOURCE_DIR ${XLNT_ROOT_DIR}/source)
 set(THIRD_PARTY_DIR ${XLNT_ROOT_DIR}/third-party)
 
-# Include libstudxml library
-add_subdirectory(${THIRD_PARTY_DIR}/libstudxml
-  ${CMAKE_CURRENT_BINARY_DIR}/third-party/libstudxml)
-
-if(COVERAGE)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
-endif()
-
-# Non-target-specific compiler settings
-if(MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4") # level 4 warnings
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP") # multi-processor compilation
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall") # all warnings
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra") # extra warnings
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas") # ignore MSVC and Clang pragmas
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized") # GCC diagnostic with lots of false positives
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything") # all warnings
-  # blacklist warnings that are not relevant
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++98-compat") # ignore warnings about C++98 compatibility
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++98-compat-pedantic") # ignore pedantic warnings about C++98 compatibility
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-padded") # ignore padding warnings
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-documentation-unknown-command") # ignore unknown commands in Javadoc-style comments
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas") # ignore Windows and GCC pragmas
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-warning-option") # ignore Windows and GCC pragmas
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-float-equal") # don't warn on uses of == for fp types
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-newline-eof") # no longer an issue with post-c++11 standards which mandate include add a newline if neccesary
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-covered-switch-default") # default is often added to switches for completeness or to cover future alternatives
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-exit-time-destructors") # this is just a warning to notify that the destructor will run during exit
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-braces") # Wmissing-field-initializers has less false positives
-endif()
-
 if(STATIC_CRT)
   include(${XLNT_ROOT_DIR}/cmake/ucm.cmake)
-  ucm_set_runtime(STATIC)
+  ucm_set_runtime(NOT BUILD_SHARED_LIBS)
 endif()
 
 if(APPLE)
@@ -62,6 +29,7 @@ if(APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET ${OSX_VERSION})
 endif()
 
+## =============== Gather all the files (headers + sources) =================
 file(GLOB ROOT_HEADERS ${XLNT_INCLUDE_DIR}/xlnt/*.hpp)
 file(GLOB CELL_HEADERS ${XLNT_INCLUDE_DIR}/xlnt/cell/*.hpp)
 file(GLOB CELL_SOURCES ${XLNT_SOURCE_DIR}/cell/*.cpp)
@@ -115,6 +83,91 @@ set(XLNT_SOURCES ${CELL_SOURCES} ${CHARTS_SOURCES} ${CHARTSHEET_SOURCES}
   ${DRAWING_SOURCES} ${FORMULA_SOURCES} ${PACKAGING_SOURCES}
   ${STYLES_SOURCES} ${UTILS_SOURCES} ${WORKBOOK_SOURCES}
   ${WORKSHEET_SOURCES} ${DETAIL_SOURCES} ${DETAIL_CRYPTO_SOURCES})
+##====================== End file gathering ==========================
+
+# Include libstudxml library
+add_subdirectory(${THIRD_PARTY_DIR}/libstudxml
+  ${CMAKE_CURRENT_BINARY_DIR}/third-party/libstudxml)
+
+add_library(xlnt
+  ${XLNT_HEADERS}
+  ${XLNT_SOURCES}
+  $<TARGET_OBJECTS:libstudxml>)
+
+# Include directories
+target_include_directories(xlnt PUBLIC ${XLNT_INCLUDE_DIR})
+target_include_directories(xlnt PRIVATE 
+  ${XLNT_SOURCE_DIR} 
+  ${THIRD_PARTY_DIR}/libstudxml
+  ${THIRD_PARTY_DIR}/utfcpp)
+
+if(NOT BUILD_SHARED_LIBS)
+  target_compile_definitions(xlnt PRIVATE XLNT_SHARED=1)
+
+  # Set SO version (for symbolic links like libxlnt.so.1.2 and libxlnt.so.1)
+  set_target_properties(xlnt
+    PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    INSTALL_NAME_DIR "${LIB_DEST_DIR}")
+else()
+  target_compile_definitions(xlnt PUBLIC XLNT_STATIC=1)
+endif()
+
+# specific compiler settings
+if(MSVC)
+  target_compile_options(xlnt PRIVATE /W4 /MP /wd4251 /wd4275 /wd4068)
+  target_compile_definitions(xlnt PRIVATE _CRT_SECURE_NO_WARNINGS=1 _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+
+  if(BUILD_SHARED_LIBS)
+    target_compile_definitions(xlnt PRIVATE XLNT_EXPORT=1)
+  endif()
+
+  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/serialization/miniz.cpp
+    PROPERTIES
+    COMPILE_FLAGS "/wd4244 /wd4334 /wd4127")
+  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/cryptography/aes.cpp
+    PROPERTIES
+    COMPILE_FLAGS "/wd4996")
+
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  target_compile_options(xlnt PRIVATE
+	-Wall # all warnings
+	-Wextra # extra warnings
+	-Wno-unknown-pragmas # ignore MSVC and Clang pragmas
+	-Wno-maybe-uninitialized) # GCC diagnostic with lots of false positives
+
+  if(COVERAGE)
+    target_compile_options(xlnt PRIVATE --coverage)
+  endif()
+
+  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/serialization/miniz.cpp
+	PROPERTIES
+	COMPILE_FLAGS "-Wno-strict-aliasing")
+
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options(xlnt PRIVATE
+    -Weverything # all warnings
+	# blacklist warnings that are not relevant or provide too many false positives
+    -Wno-c++98-compat # ignore warnings about C++98 compatibility
+    -Wno-c++98-compat-pedantic # ignore pedantic warnings about C++98 compatibility
+    -Wno-padded # ignore padding warnings
+    -Wno-documentation-unknown-command # ignore unknown commands in Javadoc-style comments
+    -Wno-unknown-pragmas # ignore Windows and GCC pragmas
+    -Wno-unknown-warning-option # ignore Windows and GCC pragmas
+    -Wno-float-equal # don't warn on uses of == for fp types
+    -Wno-newline-eof # no longer an issue with post-c++11 standards which mandate include add a newline if neccesary
+    -Wno-covered-switch-default # default is often added to switches for completeness or to cover future alternatives
+    -Wno-exit-time-destructors # this is just a warning to notify that the destructor will run during exit
+    -Wno-missing-braces) # Wmissing-field-initializers has less false positives
+
+  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/serialization/miniz.cpp
+	PROPERTIES
+	COMPILE_FLAGS "-Wno-undef")
+  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/serialization/zstream.cpp
+	PROPERTIES
+    COMPILE_FLAGS "-Wno-undef -Wno-shorten-64-to-32")
+endif()
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   # Set a default CMAKE_INSTALL_PREFIX if one wasn't specified
@@ -134,71 +187,6 @@ endif()
 
 # Append "d" to the name of the compiled library
 set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "Set debug library postfix")
-
-if(NOT STATIC)
-  # Compile shared library
-  add_library(xlnt SHARED
-    ${XLNT_HEADERS}
-    ${XLNT_SOURCES}
-    $<TARGET_OBJECTS:libstudxml>)
-
-  target_compile_definitions(xlnt PRIVATE XLNT_SHARED=1)
-
-  # Set SO version (for symbolic links like libxlnt.so.1.2 and libxlnt.so.1)
-  set_target_properties(xlnt
-    PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    INSTALL_NAME_DIR "${LIB_DEST_DIR}")
-else()
-  # Compile static library
-  add_library(xlnt STATIC ${XLNT_HEADERS} ${XLNT_SOURCES} $<TARGET_OBJECTS:libstudxml>)
-  target_compile_definitions(xlnt PUBLIC XLNT_STATIC=1)
-endif()
-
-# requires cmake 3.8+
-#target_compile_features(xlnt PUBLIC cxx_std_${XLNT_CXX_LANG})
-
-# Includes
-target_include_directories(xlnt PUBLIC ${XLNT_INCLUDE_DIR})
-target_include_directories(xlnt PRIVATE ${XLNT_SOURCE_DIR})
-target_include_directories(xlnt PRIVATE ${XLNT_SOURCE_DIR}/../third-party/libstudxml)
-target_include_directories(xlnt PRIVATE ${XLNT_SOURCE_DIR}/../third-party/utfcpp)
-
-# Platform- and file-specific settings, MSVC
-if(MSVC)
-  target_compile_definitions(xlnt PRIVATE _CRT_SECURE_NO_WARNINGS=1)
-
-  if(NOT STATIC)
-    target_compile_definitions(xlnt PRIVATE XLNT_EXPORT=1)
-  endif()
-
-  set_target_properties(xlnt PROPERTIES
-    COMPILE_FLAGS "/wd\"4251\" /wd\"4275\" /wd\"4068\"")
-  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/serialization/miniz.cpp
-    PROPERTIES
-    COMPILE_FLAGS "/wd\"4244\" /wd\"4334\" /wd\"4127\"")
-  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/cryptography/aes.cpp
-    PROPERTIES
-    COMPILE_FLAGS "/wd\"4996\"")
-else()
-  # Platform- and file-specific settings, Clang
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/serialization/miniz.cpp
-	  PROPERTIES
-	  COMPILE_FLAGS "-Wno-undef")
-    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/serialization/zstream.cpp
-	  PROPERTIES
-      COMPILE_FLAGS "-Wno-undef -Wno-shorten-64-to-32")
-  endif()
-  
-  # Platform- and file-specific settings, GCC
-  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/serialization/miniz.cpp
-	  PROPERTIES
-	  COMPILE_FLAGS "-Wno-strict-aliasing")
-  endif()
-endif()
 
 # Group files into pseudo-folders in IDEs
 source_group(xlnt FILES ${ROOT_HEADERS})
