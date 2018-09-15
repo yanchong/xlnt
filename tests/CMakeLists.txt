@@ -11,7 +11,7 @@ endif()
 
 if(STATIC_CRT)
   include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/ucm.cmake)
-  ucm_set_runtime(STATIC)
+  ucm_set_runtime(NOT BUILD_SHARED_LIBS)
 endif()
 
 file(GLOB CELL_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/cell/*.cpp)
@@ -66,7 +66,7 @@ source_group(tests\\utils FILES ${UTILS_TESTS})
 source_group(tests\\workbook FILES ${WORKBOOK_TESTS})
 source_group(tests\\worksheet FILES ${WORKSHEET_TESTS})
 
-if(MSVC AND NOT STATIC)
+if(MSVC AND BUILD_SHARED_LIBS)
   # copy xlnt DLL into xlnt.test directory
   add_custom_command(TARGET xlnt.test POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different

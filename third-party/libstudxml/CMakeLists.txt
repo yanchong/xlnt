@@ -10,7 +10,7 @@ set(LIBSTUDXML_INCLUDE_DIR ${LIBSTUDXML_ROOT_DIR})
 
 if(STATIC_CRT)
   include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/ucm.cmake)
-  ucm_set_runtime(STATIC)
+  ucm_set_runtime(NOT BUILD_SHARED_LIBS)
 endif()
 
 set(LIBSTUDXML
@@ -56,7 +56,7 @@ target_include_directories(libstudxml
   PUBLIC ${LIBSTUDXML_ROOT_DIR}
   PUBLIC ${EXPAT_INCLUDE_DIRS})
 
-if(STATIC)
+if(NOT BUILD_SHARED_LIBS)
   target_compile_definitions(libstudxml PUBLIC XML_STATIC=1)
 endif()
 
@@ -68,12 +68,12 @@ endif()
 
 # Build with -fPIC when xlnt is a shared library
 # TODO: is this still necessary? try removing
-if(NOT STATIC)
+if(BUILD_SHARED_LIBS)
   set_target_properties(libstudxml PROPERTIES POSITION_INDEPENDENT_CODE 1)
 endif()
 
 # When xlnt is a static library, assume expat will be linked statically too
 # TODO: is this a valid assumption?
-if(STATIC)
+if(NOT BUILD_SHARED_LIBS)
   target_compile_definitions(libstudxml PUBLIC XML_STATIC=1)
 endif()

@@ -12,8 +12,8 @@ configuration:
 
 environment:
   matrix:
-  - STATIC: OFF
-  - STATIC: ON
+  - SHARED: OFF
+  - SHARED: ON
   
 matrix:
   fast_finish: true
@@ -23,7 +23,7 @@ init: []
 before_build:
   - mkdir build
   - cd build
-  - cmake -G "Visual Studio 14 2015" -D CMAKE_GENERATOR_PLATFORM=%platform% -D STATIC=%STATIC% -D SAMPLES=ON -D BENCHMARKS=ON ..
+  - cmake -G "Visual Studio 14 2015" -D CMAKE_GENERATOR_PLATFORM=%platform% -D BUILD_SHARED_LIBS=%SHARED% -D SAMPLES=ON -D BENCHMARKS=ON ..
 
 build:
   project: build/xlnt_all.sln

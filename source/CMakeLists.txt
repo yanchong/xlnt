@@ -101,7 +101,7 @@ target_include_directories(xlnt PRIVATE
   ${THIRD_PARTY_DIR}/libstudxml
   ${THIRD_PARTY_DIR}/utfcpp)
 
-if(NOT BUILD_SHARED_LIBS)
+if(BUILD_SHARED_LIBS)
   target_compile_definitions(xlnt PRIVATE XLNT_SHARED=1)
 
   # Set SO version (for symbolic links like libxlnt.so.1.2 and libxlnt.so.1)
@@ -167,6 +167,10 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/serialization/zstream.cpp
 	PROPERTIES
     COMPILE_FLAGS "-Wno-undef -Wno-shorten-64-to-32")
+
+  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/detail/cryptography/sha512.c ${CMAKE_CURRENT_SOURCE_DIR}/detail/cryptography/sha1.c
+	PROPERTIES
+    COMPILE_FLAGS "-Wno-missing-prototypes")
 endif()
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

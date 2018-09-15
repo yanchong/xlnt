@@ -12,7 +12,7 @@ endif()
 
 if(STATIC_CRT)
   include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/ucm.cmake)
-  ucm_set_runtime(STATIC)
+  ucm_set_runtime(NOT BUILD_SHARED_LIBS)
 endif()
 
 set(XLNT_BENCHMARK_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
@@ -33,7 +33,7 @@ foreach(BENCHMARK_SOURCE IN ITEMS ${BENCHMARK_SOURCES})
   target_compile_definitions(${BENCHMARK_EXECUTABLE}
     PRIVATE XLNT_BENCHMARK_DATA_DIR=${XLNT_BENCHMARK_DATA_DIR})
 
-  if(MSVC AND NOT STATIC)
+  if(MSVC AND BUILD_SHARED_LIBS)
     # Copy xlnt DLL into benchmarks directory
     add_custom_command(TARGET ${BENCHMARK_EXECUTABLE} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
