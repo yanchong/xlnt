@@ -28,7 +28,7 @@ matrix:
         - CXX_VER=11
         - BUILD_TYPE=Release
         - COVERAGE=OFF
-        - STATIC=OFF
+        - SHARED=ON
         - SAMPLES=OFF
         - BENCHMARKS=OFF
         
@@ -47,7 +47,7 @@ matrix:
         - CXX_VER=14
         - BUILD_TYPE=Release
         - COVERAGE=OFF
-        - STATIC=ON
+        - SHARED=OFF
         - SAMPLES=OFF
         - BENCHMARKS=OFF
         
@@ -66,7 +66,7 @@ matrix:
         - CXX_VER=17
         - BUILD_TYPE=Release
         - COVERAGE=OFF
-        - STATIC=ON
+        - SHARED=OFF
         - SAMPLES=ON
         - BENCHMARKS=ON
 
@@ -87,7 +87,7 @@ matrix:
         - CXX_VER=11
         - BUILD_TYPE=Release
         - COVERAGE=OFF
-        - STATIC=OFF
+        - SHARED=ON
         - SAMPLES=OFF
         - BENCHMARKS=OFF
         
@@ -107,7 +107,7 @@ matrix:
         - CXX_VER=14
         - BUILD_TYPE=Release
         - COVERAGE=OFF
-        - STATIC=ON
+        - SHARED=OFF
         - SAMPLES=OFF
         - BENCHMARKS=OFF
         
@@ -127,7 +127,7 @@ matrix:
         - CXX_VER=17
         - BUILD_TYPE=Release
         - COVERAGE=OFF
-        - STATIC=ON
+        - SHARED=OFF
         - SAMPLES=ON
         - BENCHMARKS=ON
 
@@ -148,7 +148,7 @@ matrix:
         - CXX_VER=11
         - BUILD_TYPE=Debug
         - COVERAGE=ON
-        - STATIC=ON
+        - SHARED=OFF
         - SAMPLES=OFF
         
 before_install:
@@ -167,7 +167,7 @@ install:
 script:
   - mkdir build
   - cd build
-  - cmake .. -DXLNT_CXX_LANG=${CXX_VER} -DSTATIC=$STATIC -DBENCHMARKS=$BENCHMARKS -DSAMPLES=$SAMPLES -DCOVERAGE=$COVERAGE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+  - cmake .. -DXLNT_CXX_LANG=${CXX_VER} -DBUILD_SHARED_LIBS=$SHARED -DBENCHMARKS=$BENCHMARKS -DSAMPLES=$SAMPLES -DCOVERAGE=$COVERAGE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
   - cmake --build . -- -j2
   - ./tests/xlnt.test
   - echo "samples" && echo 'travis_fold:start:samples'

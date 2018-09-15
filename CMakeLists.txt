@@ -4,9 +4,6 @@ project(xlnt_all)
 # This indicates to CMakeLists in subdirectories that they are part of a larger project
 set(COMBINED_PROJECT TRUE)
 
-# Library type
-option(STATIC "Set to ON to build xlnt as a static library instead of a shared library" OFF)
-
 # c++ language standard to use
 set(XLNT_VALID_LANGS 11 14 17)
 set(XLNT_CXX_LANG "14" CACHE STRING "c++ language features to compile with")
